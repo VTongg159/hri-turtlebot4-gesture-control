@@ -1,0 +1,45 @@
+# Local ROS/Python dependencies and generated files
+/.venv/
+/vendor/
+/build/
+/install/
+/log/
+/test_results/
+/evidence/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.py[cod]
+*.egg-info/
+.coverage
+htmlcov/
+
+# Downloaded AI model; fetch with scripts/download_model.sh
+*.task
+*.task.tmp
+
+# Reports, screenshots, recordings and exported archives
+/docs/
+/reports/
+/figures/
+/images/
+/hri_week6_source/
+*.tex
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.mp4
+*.webm
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# Machine-specific configuration
+.env
+.env.*
+.vscode/
+.idea/
+.DS_Store

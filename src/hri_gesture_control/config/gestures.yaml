@@ -1,0 +1,40 @@
+gesture_recognition_node:
+  ros__parameters:
+    camera_device: 0
+    width: 640
+    height: 480
+    inference_hz: 15.0
+    display: true
+    mirror: true
+    confidence: 0.70
+    thumb_confidence: 0.60
+    thumb_hold_time: 0.60
+    stop_confidence: 0.60
+    consecutive_frames: 4
+    smoothing_window: 5
+    debounce: 0.25
+    release_time: 0.5
+    wave_confidence: 0.55
+    wave_amplitude: 0.10
+    wave_window: 2.0
+    wave_reversals: 3
+    wave_cooldown: 2.5
+    wave_min_duration: 0.45
+    wave_gap: 0.20
+robot_behavior_node:
+  ros__parameters:
+    cmd_vel_topic: /cmd_vel
+    odom_topic: /odom
+    velocity_type: auto
+    control_hz: 25.0
+    linear_speed: 0.12
+    angular_speed: 0.45
+    distance: 0.30
+    radius: 0.45
+    greeting_angle: 0.55
+    position_tolerance: 0.025
+    angle_tolerance: 0.035
+    heartbeat_timeout: 0.8
+    odom_timeout: 0.6
+    selection_timeout: 10.0
+    segment_timeout: 45.0
