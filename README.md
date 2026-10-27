@@ -1,15 +1,15 @@
 # TurtleBot 4 Gesture Control — HRI Week 06
 
-Điều khiển TurtleBot 4 trong Gazebo Harmonic bằng webcam, MediaPipe Gesture Recognizer và ROS 2 Jazzy. Người dùng chọn hành vi bằng cử chỉ và xác nhận bằng ngón cái. Robot dùng odometry để thực hiện chuyển động và dừng khi nhận STOP, CANCEL hoặc mất tín hiệu giám sát.
+Control TurtleBot 4 in Gazebo Harmonic using a webcam, MediaPipe Gesture Recognizer, and ROS 2 Jazzy. Users select a behavior with a hand gesture and confirm it with a thumbs-up. The robot uses odometry to execute motions and stops on STOP, CANCEL, or a watchdog timeout.
 
-## Môi trường
+## Requirements
 
-- Ubuntu 24.04 LTS, ROS 2 Jazzy, Gazebo Harmonic.
-- TurtleBot 4 Simulator chính thức; mặc định dùng model Lite.
-- Python 3.12, OpenCV và MediaPipe Tasks.
-- Webcam tích hợp hoặc USB. Không cần Nav2, SLAM hoặc bản đồ.
+- Ubuntu 24.04 LTS, ROS 2 Jazzy, and Gazebo Harmonic.
+- Official TurtleBot 4 Simulator; the Lite model is used by default.
+- Python 3.12, OpenCV, and MediaPipe Tasks.
+- A built-in or USB webcam. Nav2, SLAM, and a map are not required.
 
-## Cấu trúc source
+## Project structure
 
 ```text
 .
@@ -36,7 +36,7 @@
     │   ├── qos.py
     │   └── robot_behavior_node.py
     ├── launch/
-    ├── models/                 # Hướng dẫn model; file .task được tải riêng
+    ├── models/                 # Model documentation; download the .task file separately
     ├── resource/
     ├── test/
     ├── worlds/
@@ -45,11 +45,11 @@
     └── setup.py
 ```
 
-## Cài đặt và build
+## Installation and build
 
-Clone repository vào `~/hri_week6_ws`, hoặc dùng một thư mục workspace riêng khác. Các script xác định đường dẫn từ vị trí project, không phụ thuộc tên tài khoản.
+Clone the repository into `~/hri_week6_ws`, or use another dedicated workspace directory. Scripts resolve paths relative to the project location and do not depend on a specific username.
 
-Kiểm tra môi trường trước khi cài:
+Check your environment before installing dependencies:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
@@ -60,14 +60,14 @@ ls -l /dev/video*
 apt-get -s install ros-jazzy-turtlebot4-simulator
 ```
 
-Cài những dependency còn thiếu bằng package chính thức:
+Install any missing dependencies using the official packages:
 
 ```bash
 sudo apt install ros-jazzy-turtlebot4-simulator python3-venv \
   python3-opencv python3-pytest python3-colcon-common-extensions curl
 ```
 
-Tạo môi trường Python riêng, tải model rồi build:
+Create a Python environment, download the model, and build the package:
 
 ```bash
 cd ~/hri_week6_ws
@@ -79,11 +79,11 @@ python -m colcon build --symlink-install --packages-select hri_gesture_control
 source install/local_setup.bash
 ```
 
-Dùng `--system-site-packages` để truy cập `rclpy` của Jazzy. Dùng `python -m colcon` trong venv để các node có đúng Python interpreter. Model được kiểm SHA256 khi tải; thông tin nguồn ở `src/hri_gesture_control/models/README.md`.
+Use `--system-site-packages` to access Jazzy's `rclpy`. Run `python -m colcon` inside the virtual environment so that the nodes use the correct Python interpreter. The model download is verified with SHA256; its source is documented in `src/hri_gesture_control/models/README.md`.
 
-### Phương án local khi không có sudo
+### Local fallback without sudo
 
-Nếu máy đã có các dependency ROS/Gazebo nền, có thể giải nén các package simulator chính thức vào `vendor/`:
+If the machine already has the underlying ROS/Gazebo dependencies, you can extract the official simulator packages into `vendor/`:
 
 ```bash
 python3 scripts/fetch_simulator.py
@@ -92,11 +92,11 @@ python -m colcon build --symlink-install --packages-select hri_gesture_control
 source install/local_setup.bash
 ```
 
-Script đối chiếu SHA256 theo metadata apt rồi giải nén, không cài package vào hệ thống. Cách này phụ thuộc các thư viện nền đang có trên máy; cài bằng apt vẫn là phương án chính. `scripts/env.sh` chỉ thay đổi môi trường của shell hiện tại.
+The script checks package SHA256 hashes against local apt metadata before extraction and does not install system packages. This fallback depends on the libraries already available on the machine; installation through apt remains the primary approach. `scripts/env.sh` only changes the environment of the current shell.
 
-## Khởi chạy
+## Running the system
 
-### Chạy toàn bộ
+### Launch everything
 
 Terminal 1:
 
@@ -105,7 +105,7 @@ cd ~/hri_week6_ws
 ./scripts/run.sh demo
 ```
 
-Chờ robot spawn và `diffdrive_controller` active. Terminal 2:
+Wait for the robot to spawn and for `diffdrive_controller` to become active. In Terminal 2:
 
 ```bash
 cd ~/hri_week6_ws
@@ -114,21 +114,21 @@ ros2 topic echo /dock_status --once
 ros2 action send_goal /undock irobot_create_msgs/action/Undock '{}'
 ```
 
-Chờ `SUCCEEDED`, sau đó dùng tay. Nếu robot đã undock thì bỏ qua bước undock. Cần đợi simulator khởi tạo xong; gửi goal quá sớm có thể bị từ chối.
+Wait for `SUCCEEDED`, then start using hand gestures. Skip undocking if the robot is already undocked. Allow the simulator to finish initializing; an undock goal sent too early may be rejected.
 
-### Chạy Gazebo và HRI riêng
+### Launch Gazebo and HRI separately
 
 ```bash
 # Terminal 1
 ./scripts/run.sh sim
 
-# Terminal 2, sau khi đã undock
+# Terminal 2, after undocking
 ./scripts/run.sh hri
 ```
 
-`run.sh sim` và `run.sh demo` từ chối mở simulator thứ hai nếu đã có Gazebo server. `run.sh hri` chỉ chạy hai node HRI; chỉ dùng khi các node HRI chưa chạy.
+`run.sh sim` and `run.sh demo` refuse to start a second simulator when a Gazebo server is already running. `run.sh hri` starts only the two HRI nodes; use it only when those nodes are not already running.
 
-Có thể dùng ROS launch trực tiếp sau khi source:
+You can also launch the components directly after sourcing the workspace:
 
 ```bash
 ros2 launch hri_gesture_control simulation.launch.py
@@ -136,69 +136,69 @@ ros2 launch hri_gesture_control hri_gesture_control.launch.py
 ros2 launch hri_gesture_control demo.launch.py
 ```
 
-Giữ các terminal đang chạy. Ctrl+C trong terminal khởi chạy dừng cả nhóm tiến trình. Đóng webcam cũng ngừng heartbeat, khiến controller dừng robot.
+Keep the launch terminals open. Press Ctrl+C in the launch terminal to stop the process group. Closing the webcam window also stops its heartbeat, causing the controller to stop the robot.
 
-## Cách tương tác
+## Gesture controls
 
-| Cử chỉ | Nhãn | Thao tác |
+| Gesture | Label | Action |
 |---|---|---|
-| Một ngón trỏ | `POINTING_UP` | Chọn tiến–lùi bốn chu kỳ |
-| Hai ngón | `VICTORY` | Chọn một vòng tròn |
-| Vẫy tay | `WAVE` | Chọn chào trái–phải–về |
-| Ngón cái | `THUMBS_UP` | Xác nhận hành vi đã chọn |
-| Xòe tay | `OPEN_PALM` | Dừng, xóa lựa chọn, chuyển STOPPED |
-| Nắm tay | `CLOSED_FIST` | Hủy, xóa lựa chọn, về IDLE |
+| One raised index finger | `POINTING_UP` | Select four forward/backward cycles |
+| Two raised fingers | `VICTORY` | Select one circular lap |
+| Wave | `WAVE` | Select a left/right/return greeting |
+| Thumbs-up | `THUMBS_UP` | Confirm the selected behavior |
+| Open palm | `OPEN_PALM` | Stop, clear the selection, and enter STOPPED |
+| Closed fist | `CLOSED_FIST` | Cancel, clear the selection, and return to IDLE |
 
-Giữ cử chỉ chọn khoảng một giây, hạ tay 0,5 giây, rồi giơ ngón cái khoảng một giây. Xác nhận trong 10 giây sau khi chọn. Chỉ chọn chưa làm robot chạy; ngón cái khi chưa chọn không tạo chuyển động.
+Hold the selection gesture for about one second, lower your hand for 0.5 seconds, then hold a thumbs-up for about one second. Confirm within 10 seconds of selecting a behavior. Selection alone does not move the robot; a thumbs-up without a selection does not start a motion.
 
-Với Wave, mở lòng bàn tay hướng camera và dịch ngang rõ 3–4 nhịp trong khoảng hai giây. Chờ `WAVE` / `Selected: GREETING` rồi hạ tay và xác nhận. Khi robot đang chạy, xòe tay ưu tiên STOP. Sau STOP/CANCEL cần chọn lại và xác nhận; robot không tự tiếp tục.
+For Wave, face your open palm toward the camera and move it clearly from side to side for 3–4 beats within about two seconds. Wait for `WAVE` / `Selected: GREETING`, then lower your hand and confirm. While the robot is executing a behavior, an open palm takes priority as STOP. After STOP or CANCEL, select and confirm again; the robot does not resume automatically.
 
-## Kiến trúc và topics
+## Architecture and topics
 
 ```text
-Webcam → OpenCV → MediaPipe → bộ lọc / Wave landmarks
-                                      ↓
-                            /detected_gesture
-                                      ↓
-                            Robot behavior FSM
-                         ↙                     ↘
-                    /odom                  /cmd_vel
+Webcam → OpenCV → MediaPipe → gesture filtering / Wave landmarks
+                                         ↓
+                               /detected_gesture
+                                         ↓
+                               Robot behavior FSM
+                              ↗                  ↘
+                         /odom                /cmd_vel
 ```
 
-- `gesture_recognition_node`: đọc camera, nhận diện, lọc sự kiện, vẽ landmarks và UI.
-- `robot_behavior_node`: chọn/xác nhận, FSM, phản hồi odometry và watchdog bằng timer không blocking.
-- `behavior.py`, `gesture_filters.py`: logic thuần Python, kiểm thử không cần ROS.
-- `qos.py`: cấu hình sự kiện depth 1, volatile và lifespan 0,3 giây.
+- `gesture_recognition_node`: camera capture, recognition, event filtering, landmark drawing, and the webcam UI.
+- `robot_behavior_node`: selection/confirmation, behavior FSM, odometry feedback, and watchdogs using nonblocking timers.
+- `behavior.py`, `gesture_filters.py`: pure Python logic that can be tested without ROS.
+- `qos.py`: gesture events use depth 1, volatile durability, and a 0.3-second lifespan.
 
-| Topic | Message type | Nội dung |
+| Topic | Message type | Content |
 |---|---|---|
-| `/detected_gesture` | `std_msgs/msg/String` | Nhãn cử chỉ theo sự kiện |
-| `/gesture_system/heartbeat` | `std_msgs/msg/Bool` | Camera và inference hoạt động |
-| `/gesture_system/status` | `std_msgs/msg/String` | JSON trạng thái robot |
-| `/gesture_system/recognition` | `std_msgs/msg/String` | JSON nhãn, score, landmarks và chẩn đoán Wave |
-| `/cmd_vel` | Thực tế `geometry_msgs/msg/TwistStamped` | Lệnh vận tốc |
-| `/odom` | `nav_msgs/msg/Odometry` | Phản hồi vị trí và hướng |
-| `/clock` | `rosgraph_msgs/msg/Clock` | Thời gian mô phỏng |
+| `/detected_gesture` | `std_msgs/msg/String` | Gesture labels published as events |
+| `/gesture_system/heartbeat` | `std_msgs/msg/Bool` | Camera and inference health |
+| `/gesture_system/status` | `std_msgs/msg/String` | Robot state as JSON |
+| `/gesture_system/recognition` | `std_msgs/msg/String` | Labels, scores, landmarks, and Wave diagnostics as JSON |
+| `/cmd_vel` | Observed: `geometry_msgs/msg/TwistStamped` | Velocity commands |
+| `/odom` | `nav_msgs/msg/Odometry` | Position and orientation feedback |
+| `/clock` | `rosgraph_msgs/msg/Clock` | Simulation time |
 
-Node điều khiển kiểm tra subscriber thực tế để chọn đúng `TwistStamped` hoặc `Twist`. Heartbeat được gửi sau khi đọc ảnh và inference thành công, kể cả lúc không có bàn tay. Không dùng việc thiếu gesture event để suy ra mất camera.
+The controller inspects actual subscribers to select `TwistStamped` or `Twist`. A heartbeat is sent after successful image capture and inference, including when no hand is visible. The absence of a new gesture event is not treated as a camera failure.
 
-## Cấu hình
+## Configuration
 
-File mặc định: `src/hri_gesture_control/config/gestures.yaml`.
+Default configuration: `src/hri_gesture_control/config/gestures.yaml`.
 
-| Tham số | Mặc định |
+| Parameter | Default |
 |---|---|
 | Camera / inference | Device 0, 640×480, 15 Hz |
-| Cử chỉ chọn | Confidence 0,70, bốn frame liên tiếp |
-| Xác nhận ngón cái | Confidence 0,60, giữ liên tục 0,60 s |
-| STOP | Confidence 0,60, bỏ qua temporal delay |
-| Wave | Confidence 0,55, biên độ 0,10 ảnh, ba đảo chiều / 2 s |
-| Wave cooldown | 2,5 s |
-| Vận tốc lệnh tối đa mặc định | 0,12 m/s; 0,45 rad/s |
-| Tiến–lùi / vòng tròn | Khoảng tiến 0,30 m; bán kính 0,45 m |
-| Heartbeat / odom timeout | 0,8 s / 0,6 s |
+| Selection gestures | Confidence 0.70, four consecutive frames |
+| Thumbs-up confirmation | Confidence 0.60, held continuously for 0.60 s |
+| STOP | Confidence 0.60, bypasses temporal filtering delay |
+| Wave | Confidence 0.55, amplitude 0.10 of image width, three reversals within 2 s |
+| Wave cooldown | 2.5 s |
+| Default command speed limits | 0.12 m/s; 0.45 rad/s |
+| Forward/backward / circle | Forward distance 0.30 m; radius 0.45 m |
+| Heartbeat / odometry timeout | 0.8 s / 0.6 s |
 
-Ví dụ ghi đè khi launch:
+Examples of launch overrides:
 
 ```bash
 ./scripts/run.sh hri camera_device:=2
@@ -208,17 +208,17 @@ Ví dụ ghi đè khi launch:
 ./scripts/run.sh hri display:=false
 ```
 
-Launch argument trống giữ giá trị YAML. Các topic gesture/status/heartbeat dùng chung cho một robot; không chạy nhiều bộ HRI trên cùng topics.
+An empty launch argument preserves the YAML value. Gesture, status, and heartbeat topics are shared for a single robot; do not run multiple HRI instances on the same topics.
 
-## Kiểm thử và kiểm tra code
+## Testing and code checks
 
-Unit test thuần Python:
+Pure Python unit tests:
 
 ```bash
 .venv/bin/python -m pytest
 ```
 
-Build và ROS package tests:
+Build and ROS package tests:
 
 ```bash
 source scripts/env.sh
@@ -227,7 +227,7 @@ python -m colcon test --packages-select hri_gesture_control --event-handlers con
 colcon test-result --verbose
 ```
 
-Lint và format:
+Lint and formatting:
 
 ```bash
 .venv/bin/pip install -r requirements-dev.txt
@@ -235,9 +235,9 @@ Lint và format:
 .venv/bin/ruff format --check src scripts
 ```
 
-### Test tích hợp trong Gazebo
+### Gazebo integration tests
 
-Giữ simulator đang chạy và robot đã undock. Dừng các node HRI trước. Chạy riêng controller ở terminal 1:
+Keep the simulator running with the robot undocked. Stop the HRI nodes first. Run only the controller in Terminal 1:
 
 ```bash
 source scripts/env.sh
@@ -252,32 +252,32 @@ source scripts/env.sh
 python scripts/test_simulation.py
 ```
 
-Script tiêm nhãn và heartbeat để kiểm tra ba chuyển động, chọn/xác nhận, STOP, CANCEL và watchdog. Đây là test điều khiển, không phải test độ chính xác nhận diện webcam.
+This script injects gesture labels and heartbeats to test the three motions, selection/confirmation, STOP, CANCEL, and watchdogs. It tests robot control, not webcam recognition accuracy.
 
-Test lỗi tiến trình với webcam thật:
+Process-failure tests with the real webcam:
 
 ```bash
-# Dừng các node HRI; giữ Gazebo và robot đã undock, để tay ngoài camera.
+# Stop the HRI nodes; keep Gazebo running and the robot undocked, with your hands out of view.
 source scripts/env.sh
 python scripts/test_faults.py
 ```
 
-Script này tự tạo hai node HRI, cố ý kill những tiến trình do nó quản lý và tạm pause world để kiểm tra watchdog. Không chạy cùng demo đang điều khiển bằng tay. Dữ liệu test được ghi vào `test_results/`, nằm ngoài Git.
+This script starts its own two HRI nodes, deliberately kills processes it manages, and temporarily pauses the world to test the watchdog. Do not run it alongside a live gesture-control demo. Test data is written to `test_results/`, which is excluded from Git.
 
-## Xử lý lỗi thường gặp
+## Troubleshooting
 
-| Hiện tượng | Cách kiểm tra |
+| Symptom | What to check |
 |---|---|
-| Không import `rclpy` | Source Jazzy, dùng venv với `--system-site-packages` |
-| `ros2 run` không tìm MediaPipe | Build bằng `python -m colcon` từ venv |
-| Camera bận hoặc không đọc ảnh | Đóng ứng dụng khác; kiểm tra `/dev/video*` và `fuser /dev/video0` |
-| SELECTED nhưng chưa chạy | Kiểm tra có `THUMBS_UP` đủ score/thời gian giữ trong 10 giây |
-| Wave chưa nhận | Xem `Raw`, score, span và turns; dịch cả lòng bàn tay ngang, giữ tay trong frame |
-| EXECUTING nhưng robot không đi | Kiểm tra dock, controller active, đúng topic/type và `/odom` |
-| ERROR sau khi pause Gazebo | Odom watchdog đã dừng robot; resume rồi chọn và xác nhận lại |
-| Clock/TF nhảy hoặc controller bị trùng | Chỉ chạy một simulator, cùng `ROS_DOMAIN_ID` ở các terminal |
+| Cannot import `rclpy` | Source Jazzy and use a virtual environment with `--system-site-packages` |
+| `ros2 run` cannot find MediaPipe | Build with `python -m colcon` from the virtual environment |
+| Camera is busy or frames cannot be read | Close other camera applications; check `/dev/video*` and `fuser /dev/video0` |
+| SELECTED but no motion | Check that `THUMBS_UP` reaches the score and hold-time thresholds within 10 seconds |
+| Wave is not detected | Check `Raw`, score, span, and turns; move the whole palm horizontally and keep it in frame |
+| EXECUTING but no motion | Check dock status, controller activation, the velocity topic/type, and `/odom` |
+| ERROR after pausing Gazebo | The odometry watchdog stopped the robot; resume, then select and confirm again |
+| Clock/TF jumps or duplicate controllers | Run only one simulator and use the same `ROS_DOMAIN_ID` in all terminals |
 
-Kiểm tra ROS interface:
+Inspect the ROS interfaces:
 
 ```bash
 ros2 topic list -t
@@ -286,12 +286,12 @@ ros2 topic echo /odom --once
 ros2 control list_controllers
 ```
 
-## Phạm vi repository
+## Repository scope
 
-Repository chỉ chứa source, cấu hình, launch, tests, hướng dẫn chạy và script tải dependency/model. Báo cáo, LaTeX, PDF, ảnh webcam, video, log, archive, model đã tải, môi trường Python và thư mục build/install đều không đưa vào Git.
+The repository contains source code, configuration, launch files, tests, usage instructions, and dependency/model download scripts. Reports, LaTeX files, PDFs, webcam images, videos, logs, archives, downloaded models, Python environments, and build/install directories are excluded from Git.
 
-## Tài liệu gốc và giấy phép
+## References and license
 
 - [TurtleBot 4 Simulator](https://turtlebot.github.io/turtlebot4-user-manual/software/simulation.html)
 - [MediaPipe Gesture Recognizer](https://ai.google.dev/edge/mediapipe/solutions/vision/gesture_recognizer/python)
-- Source của project dùng giấy phép Apache-2.0, xem `LICENSE`. Model tải từ Google có thông tin nguồn riêng trong `models/README.md`.
+- Project source code is licensed under Apache-2.0; see `LICENSE`. The model downloaded from Google has separate source information in `models/README.md`.
